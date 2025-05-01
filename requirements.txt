@@ -1,0 +1,6 @@
+numpy>=1.20.0
+opencv-python>=4.5.0
+setuptools>=42.0.0
+wheel>=0.36.2
+build>=0.7.0
+cmake>=3.15.0

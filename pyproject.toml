@@ -1,0 +1,27 @@
+[build-system]
+requires = [
+    "setuptools>=77.0.0",
+    "wheel",
+    "cmake>=3.15",
+    "pybind11>=2.10.0",
+    "ninja; platform_system!='Windows'"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dx11_renderer"
+version = "1.0.0"
+description = "DirectX 11 accelerated image processing for real-time video"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    {name = "M. Bilal Maulida", email = "relay.arbiter303@gmail.com"}
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "opencv-python>=4.5.0"
+]
+
+[tool.setuptools]
+packages = ["dx11_renderer"]

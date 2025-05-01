@@ -1,0 +1,92 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+
+# Build outputs
+*.dll
+*.pyd
+*.exe
+*.lib
+*.exp
+*.iobj
+*.ipdb
+*.pdb
+*.ilk
+localpackage/
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+
+# Logs
+log/
+*.log
+
+# YOLO weights (if needed, specify which ones to include)
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Local development
+temp/
+tmp/
+.vs/
+Debug/
+Release/
+x64/
+Win32/
+
+# IDE specific files
+.idea/
+*.swp
+*.swo
+*~
+
+# Private or sensitive data
+config.private.json
+*.key
+*.pem
+credentials.json

@@ -1,0 +1,16 @@
+include LICENSE
+include README.md
+include CMakeLists.txt
+include pyproject.toml
+include setup.cfg
+include setup.py
+
+recursive-include include *.h
+recursive-include src *.cpp
+recursive-include dx11_renderer *.dll *.pyd
+recursive-include build/dx11_renderer *.dll *.pyd
+
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude *.dylib

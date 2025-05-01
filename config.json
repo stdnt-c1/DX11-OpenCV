@@ -1,0 +1,27 @@
+{
+    "paths": {
+        "models": "models",
+        "presets": "presets",
+        "screenshots": "screenshots"
+    },
+    "defaults": {
+        "yolo_model": "yolov8n.pt",
+        "camera_index": 0,
+        "detection_confidence": 0.3,
+        "window_size": {
+            "width": 1280,
+            "height": 720
+        }
+    },
+    "processing": {
+        "brightness": 1.0,
+        "contrast": 1.0,
+        "saturation": 1.0,
+        "gamma": 1.0
+    },
+    "display": {
+        "show_fps": true,
+        "show_detections": true,
+        "show_processing_time": true
+    }
+}
