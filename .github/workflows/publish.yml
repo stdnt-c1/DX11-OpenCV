@@ -40,13 +40,15 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel build twine ninja cmake
-        pip install opencv-python==4.11.0
         pip install -r requirements.txt
         
-    - name: Set up OpenCV
+    - name: Install OpenCV
+      run: |
+        python -m pip install opencv-python==4.11.0
+
+    - name: Set OpenCV Path
       shell: cmd
       run: |
-        python -c "import cv2; print('OpenCV Version:', cv2.__version__)"
         for /f "tokens=*" %%i in ('python -c "import os, cv2; print(os.path.dirname(cv2.__file__))"') do set "OPENCV_DIR=%%i"
         echo OpenCV_DIR=%OPENCV_DIR%
         echo CMAKE_PREFIX_PATH=%OPENCV_DIR% >> $GITHUB_ENV
