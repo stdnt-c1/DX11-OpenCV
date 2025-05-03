@@ -18,7 +18,45 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 
 # Find packages
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(OpenCV REQUIRED)
+
+# Handle OpenCV from pip installation
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import os, cv2; print(os.path.dirname(cv2.__file__))"
+    OUTPUT_VARIABLE OPENCV_PYTHON_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE PYTHON_OPENCV_RESULT
+)
+
+if(NOT PYTHON_OPENCV_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to locate OpenCV Python package")
+endif()
+
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import cv2; print(cv2.__version__)"
+    OUTPUT_VARIABLE OPENCV_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+message(STATUS "Found OpenCV Python package at: ${OPENCV_PYTHON_PATH}")
+message(STATUS "OpenCV version: ${OPENCV_VERSION}")
+
+# Set OpenCV paths
+set(OpenCV_DIR "${OPENCV_PYTHON_PATH}")
+set(OpenCV_INCLUDE_DIRS "${OPENCV_PYTHON_PATH}/include")
+set(OpenCV_LIB_PATH "${OPENCV_PYTHON_PATH}")
+set(OpenCV_LIBS "${OPENCV_PYTHON_PATH}/opencv_world4110.dll")
+
+if(NOT EXISTS "${OpenCV_LIBS}")
+    file(GLOB OpenCV_WORLD_DLL "${OPENCV_PYTHON_PATH}/opencv_world*.dll")
+    if(OpenCV_WORLD_DLL)
+        set(OpenCV_LIBS "${OpenCV_WORLD_DLL}")
+        message(STATUS "Found OpenCV world DLL: ${OpenCV_LIBS}")
+    else()
+        message(FATAL_ERROR "Could not find OpenCV world DLL in ${OPENCV_PYTHON_PATH}")
+    endif()
+endif()
+
+include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})
 
 # Set Python and pybind11 options
 set(PYBIND11_PYTHON_VERSION "${Python3_VERSION}")
@@ -113,3 +151,19 @@ set_target_properties(_core PROPERTIES
     PREFIX ""
     SUFFIX ".pyd"
 )
+
+# Fallback for OpenCV detection when installed via pip
+if(NOT OpenCV_DIR)
+    message(WARNING "OpenCV_DIR is not set. Attempting to locate OpenCV via Python.")
+    execute_process(
+        COMMAND python -c "import os, cv2; print(os.path.dirname(cv2.__file__))"
+        OUTPUT_VARIABLE OPENCV_PYTHON_PATH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(OPENCV_PYTHON_PATH)
+        set(OpenCV_DIR "${OPENCV_PYTHON_PATH}")
+        message(STATUS "Using OpenCV from Python: ${OpenCV_DIR}")
+    else()
+        message(FATAL_ERROR "Failed to locate OpenCV. Please set OpenCV_DIR manually.")
+    endif()
+endif()
