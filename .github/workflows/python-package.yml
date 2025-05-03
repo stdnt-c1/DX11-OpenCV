@@ -55,7 +55,7 @@ jobs:
       run: |
         for /f "tokens=*" %%i in ('python -c "import os, cv2; print(os.path.dirname(cv2.__file__))"') do set "OPENCV_DIR=%%i"
         echo OpenCV_DIR=%OPENCV_DIR%
-        echo CMAKE_PREFIX_PATH=%OPENCV_DIR% >> $GITHUB_ENV
+        echo OpenCV_DIR=%OPENCV_DIR% >> $GITHUB_ENV
 
     - name: Configure CMake
       shell: cmd
@@ -65,6 +65,12 @@ jobs:
         -DOpenCV_DIR="%OPENCV_DIR%" ^
         -DCMAKE_BUILD_TYPE=Release ^
         -DBUILD_TESTING=ON
+
+    - name: Clean build directory
+      shell: cmd
+      run: |
+        if exist build rmdir /s /q build
+        mkdir build
 
     - name: Build
       shell: cmd
