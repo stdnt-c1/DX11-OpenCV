@@ -1,0 +1,19 @@
+# DLLs and Python Extensions
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.pyd filter=lfs diff=lfs merge=lfs -text
+dx11_renderer/*.dll filter=lfs diff=lfs merge=lfs -text
+dx11_renderer/*.pyd filter=lfs diff=lfs merge=lfs -text
+# YOLO weights
+*.pt filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+# Executables
+*.exe filter=lfs diff=lfs merge=lfs -text
+dx11_renderer/xwbtool.exe filter=lfs diff=lfs merge=lfs -text
+# OpenCV DLLs
+dx11_renderer/opencv_world*.dll filter=lfs diff=lfs merge=lfs -text
+# Build artifacts
+build/**/*.exe filter=lfs diff=lfs merge=lfs -text
+build/**/*.dll filter=lfs diff=lfs merge=lfs -text
+build/**/*.pyd filter=lfs diff=lfs merge=lfs -text
+*.exe filter=lfs diff=lfs merge=lfs -text

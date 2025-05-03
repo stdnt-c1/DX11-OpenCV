@@ -30,6 +30,10 @@ endif()
 set(DIRECTXTK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extern/DirectXTK")
 add_subdirectory(${DIRECTXTK_DIR})
 
+# Add pybind11 as a submodule
+set(PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extern/pybind11")
+add_subdirectory(${PYBIND11_DIR})
+
 # Core library
 add_library(dx11_renderer_core SHARED
     src/dx11_renderer.cpp
