@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Create DX11 Renderer Library",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-G",
+				"Visual Studio 17 2022",
+				"-A",
+				"x64",
+				"-S",
+				".",
+				"-B",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": "$msCompile",
+			"group": "build"
+		}
+	]
+}

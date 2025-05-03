@@ -20,73 +20,98 @@ wheels/
 .installed.cfg
 *.egg
 
-# CMake
+# CMake build artifacts
 CMakeCache.txt
 CMakeFiles/
-CMakeScripts/
 Testing/
-Makefile
-cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
-_deps
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.sln
+_deps/
 
-# Build outputs
-*.dll
-*.pyd
-*.exe
-*.lib
-*.exp
-*.iobj
-*.ipdb
+# Build directories (but not the DLLs/PYDs that are part of the package)
+build/
+temp/
+__pycache__/
+
+# Keep package DLLs and binaries
+!dx11_renderer/*.dll
+!dx11_renderer/*.pyd
+!dx11_renderer/D3DCompiler_47.dll
+!dx11_renderer/dx11_renderer_core.dll
+!dx11_renderer/_core.pyd
+!dx11_renderer/xwbtool.exe
+
+# Exclude debug symbols and temporary build files
 *.pdb
 *.ilk
-localpackage/
+*.iobj
+*.ipdb
+*.exp
+*.lib
 
-# VS Code
-.vscode/
+# Allow CMake configuration
+!CMakeLists.txt
+!*/CMakeLists.txt
+
+# IDE and Editor files
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
 *.code-workspace
 .history/
+.vs/
 
-# Logs
-log/
+# Logs and temporary data
+log/*
+!log/.gitkeep
 *.log
+temp/
 
-# YOLO weights (if needed, specify which ones to include)
+# Machine Learning Models
+# Allow specific YOLO model used in tests
 *.pt
 *.pth
 *.onnx
 *.engine
+!yolov8n.pt  # Include the default test model
 
-# Environment
+# Environment and virtualenvs
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/
 
-# Local development
-temp/
-tmp/
-.vs/
+# Build directories
 Debug/
 Release/
 x64/
 Win32/
+dist/
+build/
 
-# IDE specific files
+# Test cache
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Private and sensitive data
+config.private.json
+credentials.json
+*.key
+*.pem
+*.pfx
+.env*
+!.env.example
+
+# Local development
 .idea/
 *.swp
 *.swo
 *~
 
-# Private or sensitive data
-config.private.json
-*.key
-*.pem
-credentials.json
+# Keep specific project configuration
+!setup.cfg
+!pyproject.toml
+!requirements.txt
