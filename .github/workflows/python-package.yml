@@ -19,103 +19,86 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
-        msvc-version: ['14.1', '14.2', '14.3']
-        include:
-          - msvc-version: '14.1'
-            vs-version: '2017'
-          - msvc-version: '14.2'
-            vs-version: '2019'
-          - msvc-version: '14.3'
-            vs-version: '2022'
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-          lfs: true
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        lfs: true
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            setup.py
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: x64
+        cache: pip
+        cache-dependency-path: |
+          requirements.txt
+          setup.py
 
-      - name: Setup Visual Studio
-        uses: microsoft/setup-msbuild@v1.3.1
-        with:
-          vs-version: ${{ matrix.vs-version }}
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.3.1
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov
-          pip install setuptools wheel build ninja pybind11 cmake
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+        pip install setuptools wheel build ninja cmake
+        pip install -r requirements.txt
 
-      - name: Configure CMake
-        shell: cmd
-        run: |
-          cmake -S . -B build -G "Visual Studio ${{ matrix.vs-version }}" ^
-          -A x64 ^
-          -DPYBIND11_PYTHON_VERSION=${{ matrix.python-version }} ^
-          -DCMAKE_BUILD_TYPE=Release ^
-          -DCMAKE_CXX_COMPILER="cl.exe" ^
-          -DCMAKE_C_COMPILER="cl.exe" ^
-          -DBUILD_TESTING=ON
-        env:
-          CC: cl.exe
-          CXX: cl.exe
+    - name: Configure CMake
+      shell: cmd
+      run: |
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64 ^
+        -DPYBIND11_PYTHON_VERSION=${{ matrix.python-version }} ^
+        -DCMAKE_BUILD_TYPE=Release ^
+        -DBUILD_TESTING=ON
 
-      - name: Build
-        shell: cmd
-        run: |
-          cmake --build build --config Release
-          if errorlevel 1 (
-            echo "Build failed - checking logs"
-            type build\CMakeFiles\CMakeError.log
-            type build\CMakeFiles\CMakeOutput.log
-            exit /b 1
-          )
+    - name: Build
+      shell: cmd
+      run: |
+        cmake --build build --config Release
+        if errorlevel 1 (
+          echo "Build failed - checking logs"
+          if exist build\CMakeFiles\CMakeError.log type build\CMakeFiles\CMakeError.log
+          if exist build\CMakeFiles\CMakeOutput.log type build\CMakeFiles\CMakeOutput.log
+          exit /b 1
+        )
 
-      - name: Install package
-        shell: cmd
-        run: |
-          python -m pip install -e .
+    - name: Install package
+      shell: cmd
+      run: |
+        python -m pip install -e .
 
-      - name: Run tests
-        shell: cmd
-        run: |
-          python -m pytest tests/ --cov=dx11_renderer --cov-report=xml
+    - name: Run tests
+      shell: cmd
+      run: |
+        python -m pytest tests/ --cov=dx11_renderer --cov-report=xml
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
+    - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
 
-      - name: Build wheel
-        shell: cmd
-        run: |
-          python -m build --wheel
-          if errorlevel 1 (
-            echo "Wheel build failed"
-            type log\wheel_build_log.txt
-            exit /b 1
-          )
+    - name: Build wheel
+      shell: cmd
+      run: |
+        python -m build --wheel
+        if errorlevel 1 (
+          echo "Wheel build failed"
+          if exist log\wheel_build_log.txt type log\wheel_build_log.txt
+          exit /b 1
+        )
 
-      - name: Store package
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-          retention-days: 7
+    - name: Store package
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/*.whl
+        retention-days: 7
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -123,14 +106,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
+    - uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
 
-      - name: Publish package to GitHub
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
