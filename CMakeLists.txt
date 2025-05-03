@@ -18,8 +18,34 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR})
 
 # Find packages
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
 find_package(OpenCV REQUIRED)
+
+# Set Python and pybind11 options
+set(PYBIND11_PYTHON_VERSION "${Python3_VERSION}")
+set(PYBIND11_FINDPYTHON ON)
+set(PYBIND11_PREFER_THIRD_PARTY_PYTHON ON)
+
+# Try to find pybind11 from different possible locations
+find_package(pybind11 CONFIG QUIET)
+if(NOT pybind11_FOUND)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/pybind11/CMakeLists.txt")
+        add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern/pybind11")
+    else()
+        message(FATAL_ERROR "pybind11 not found and not available as submodule")
+    endif()
+endif()
+
+# Set MSVC-specific options
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    
+    # Check MSVC version and set appropriate flags
+    if(MSVC_VERSION GREATER_EQUAL 1920)     # VS 2019 or newer
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+    endif()
+endif()
 
 # DirectX 11 libraries
 if(WIN32)
@@ -29,10 +55,6 @@ endif()
 # DirectXTK
 set(DIRECTXTK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extern/DirectXTK")
 add_subdirectory(${DIRECTXTK_DIR})
-
-# Add pybind11 as a submodule
-set(PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/extern/pybind11")
-add_subdirectory(${PYBIND11_DIR})
 
 # Core library
 add_library(dx11_renderer_core SHARED
