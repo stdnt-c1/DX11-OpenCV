@@ -1,16 +1,19 @@
-name: Publish to PyPI
+name: Python Package
 
 on:
-  release:
-    types: [created]
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
-  build_wheels:
-    name: Build wheels on Windows
+  test:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -26,8 +29,7 @@ jobs:
             vs-version: '2022'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
@@ -51,7 +53,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel build twine ninja pybind11 cmake
+          pip install pytest pytest-cov
+          pip install setuptools wheel build ninja pybind11 cmake
           pip install -r requirements.txt
 
       - name: Configure CMake
@@ -62,12 +65,13 @@ jobs:
           -DPYBIND11_PYTHON_VERSION=${{ matrix.python-version }} ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DCMAKE_CXX_COMPILER="cl.exe" ^
-          -DCMAKE_C_COMPILER="cl.exe"
+          -DCMAKE_C_COMPILER="cl.exe" ^
+          -DBUILD_TESTING=ON
         env:
           CC: cl.exe
           CXX: cl.exe
 
-      - name: Build C++ library
+      - name: Build
         shell: cmd
         run: |
           cmake --build build --config Release
@@ -78,83 +82,55 @@ jobs:
             exit /b 1
           )
 
-      - name: Verify DLL Dependencies
+      - name: Install package
         shell: cmd
         run: |
-          python check_dll.py
-          if errorlevel 1 (
-            echo "DLL dependency check failed"
-            exit /b 1
-          )
+          python -m pip install -e .
+
+      - name: Run tests
+        shell: cmd
+        run: |
+          python -m pytest tests/ --cov=dx11_renderer --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
 
       - name: Build wheel
         shell: cmd
         run: |
-          python -m build --wheel --no-isolation
+          python -m build --wheel
           if errorlevel 1 (
             echo "Wheel build failed"
             type log\wheel_build_log.txt
             exit /b 1
           )
 
-      - name: Verify wheel
-        shell: cmd
-        run: |
-          mkdir test_env
-          cd test_env
-          python -m venv venv
-          call venv\Scripts\activate.bat
-          python -m pip install ..\dist\*.whl
-          python -c "import dx11_renderer; print('Import test successful')"
-          if errorlevel 1 (
-            echo "Wheel verification failed"
-            exit /b 1
-          )
-          cd ..
-          rmdir /s /q test_env
-
-      - name: Store wheel
+      - name: Store package
         uses: actions/upload-artifact@v4
         with:
-          name: python-${{ matrix.python-version }}-msvc${{ matrix.msvc-version }}-wheel
-          path: dist/*.whl
-          if-no-files-found: error
+          name: python-package-distributions
+          path: dist/
           retention-days: 7
 
   publish:
-    needs: build_wheels
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Download wheels
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          pattern: python-*-wheel
-          path: dist
-          merge-multiple: true
+          name: python-package-distributions
+          path: dist/
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Publish package to GitHub
+        uses: softprops/action-gh-release@v1
         with:
-          python-version: '3.12'
-
-      - name: Install Twine
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade twine
-
-      - name: List wheels
-        run: |
-          ls -l dist/
-
-      - name: Check wheels
-        run: |
-          python -m twine check dist/*.whl
-
-      - name: Publish to PyPI
+          files: dist/*
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          python -m twine upload --skip-existing dist/*.whl
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
