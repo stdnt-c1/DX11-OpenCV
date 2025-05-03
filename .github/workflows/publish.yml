@@ -1,55 +1,90 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Publish to PyPI
 
 on:
   release:
     types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-windows:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         architecture: ["x64"]
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: ${{ matrix.architecture }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel twine build
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3.1
 
-    - name: Build package
-      run: python -m build
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine build ninja
+          pip install -r requirements.txt
 
-    - name: Store wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist/*.whl
+      - name: Build package
+        env:
+          DISTUTILS_DEBUG: 1
+        run: |
+          python -m build --wheel
+          xcopy /Y "dx11_renderer\*.dll" "dist\"
+          xcopy /Y "dx11_renderer\D3DCompiler_47.dll" "dist\"
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.python-version }}-artifacts
+          path: |
+            dist/*.whl
+            dist/*.dll
+          if-no-files-found: error
+          retention-days: 7
 
   publish:
     needs: build-windows
     runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
-    - uses: actions/download-artifact@v2
-      with:
-        name: dist
-        path: dist
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: python-*-artifacts
+          path: dist/
+          merge-multiple: true
 
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        python -m twine upload dist/*
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install twine
+        run: |
+          python -m pip install --upgrade pip
+          pip install twine
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m twine check dist/*
+          python -m twine upload --skip-existing dist/*
