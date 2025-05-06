@@ -40,21 +40,103 @@ execute_process(
 message(STATUS "Found OpenCV Python package at: ${OPENCV_PYTHON_PATH}")
 message(STATUS "OpenCV version: ${OPENCV_VERSION}")
 
-# Set OpenCV paths
-set(OpenCV_DIR "${OPENCV_PYTHON_PATH}")
-set(OpenCV_INCLUDE_DIRS "${OPENCV_PYTHON_PATH}/include")
-set(OpenCV_LIB_PATH "${OPENCV_PYTHON_PATH}")
-set(OpenCV_LIBS "${OPENCV_PYTHON_PATH}/opencv_world4110.dll")
+# Try to find OpenCV DLL in multiple locations
+set(OpenCV_DLL_FOUND FALSE)
 
-if(NOT EXISTS "${OpenCV_LIBS}")
-    file(GLOB OpenCV_WORLD_DLL "${OPENCV_PYTHON_PATH}/opencv_world*.dll")
-    if(OpenCV_WORLD_DLL)
-        set(OpenCV_LIBS "${OpenCV_WORLD_DLL}")
-        message(STATUS "Found OpenCV world DLL: ${OpenCV_LIBS}")
-    else()
-        message(FATAL_ERROR "Could not find OpenCV world DLL in ${OPENCV_PYTHON_PATH}")
+# First check in workspace directory
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/opencv_world4110.dll")
+    set(OpenCV_WORLD_DLL "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/opencv_world4110.dll")
+    set(OpenCV_DLL_FOUND TRUE)
+    message(STATUS "Found OpenCV DLL in workspace: ${OpenCV_WORLD_DLL}")
+else()
+    # Get site-packages paths
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import os, site; print(';'.join(site.getsitepackages()))"
+        OUTPUT_VARIABLE SITE_PACKAGES_PATHS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Convert paths to CMake format
+    string(REPLACE "\\" "/" SITE_PACKAGES_PATHS "${SITE_PACKAGES_PATHS}")
+    
+    # Build search paths list
+    set(OpenCV_SEARCH_PATHS
+        "${OPENCV_PYTHON_PATH}"
+        "${OPENCV_PYTHON_PATH}/cv2"
+        "${OPENCV_PYTHON_PATH}/python-3"
+        "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer"
+        "${SITE_PACKAGES_PATHS}"
+    )
+
+    # Try to get DLL name from Python
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import cv2, os; print([f for f in os.listdir(os.path.dirname(cv2.__file__)) if 'opencv_world' in f and f.endswith('.dll')][0])"
+        OUTPUT_VARIABLE OPENCV_DLL_NAME
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE RESULT
+    )
+
+    if(RESULT EQUAL 0 AND OPENCV_DLL_NAME)
+        foreach(SEARCH_PATH ${OpenCV_SEARCH_PATHS})
+            message(STATUS "Searching for OpenCV DLLs in: ${SEARCH_PATH}")
+            if(EXISTS "${SEARCH_PATH}/${OPENCV_DLL_NAME}")
+                set(OpenCV_WORLD_DLL "${SEARCH_PATH}/${OPENCV_DLL_NAME}")
+                set(OpenCV_DLL_FOUND TRUE)
+                break()
+            endif()
+            
+            # Try one level deeper
+            if(EXISTS "${SEARCH_PATH}/cv2/${OPENCV_DLL_NAME}")
+                set(OpenCV_WORLD_DLL "${SEARCH_PATH}/cv2/${OPENCV_DLL_NAME}")
+                set(OpenCV_DLL_FOUND TRUE)
+                break()
+            endif()
+        endforeach()
     endif()
 endif()
+
+if(NOT OpenCV_DLL_FOUND)
+    message(FATAL_ERROR "Could not find OpenCV world DLL in any of the search paths. Searched in:\n${OpenCV_SEARCH_PATHS}")
+endif()
+
+# Set OpenCV paths and verify existence
+if(OpenCV_DLL_FOUND)
+    get_filename_component(OpenCV_DLL_DIR ${OpenCV_WORLD_DLL} DIRECTORY)
+    
+    # Set OpenCV paths
+    set(OpenCV_DIR "${OpenCV_DLL_DIR}")
+    set(OpenCV_INCLUDE_DIRS 
+        "${OpenCV_DLL_DIR}/include" 
+        "${OPENCV_PYTHON_PATH}/include"
+        "${OPENCV_PYTHON_PATH}"
+        "${OPENCV_PYTHON_PATH}/cv2"
+    )
+    set(OpenCV_LIB_PATH "${OpenCV_DLL_DIR}")
+    set(OpenCV_LIBS "${OpenCV_WORLD_DLL}")
+    
+    # Verify DLL exists and is readable
+    if(NOT EXISTS "${OpenCV_LIBS}")
+        message(FATAL_ERROR "OpenCV DLL not found at: ${OpenCV_LIBS}")
+    endif()
+    
+    # Ensure the DLL can be copied
+    file(COPY "${OpenCV_LIBS}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/opencv_world4110.dll")
+        message(FATAL_ERROR "Failed to copy OpenCV DLL to: ${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+    
+    message(STATUS "OpenCV DLL verified at: ${OpenCV_WORLD_DLL}")
+    message(STATUS "OpenCV include directories: ${OpenCV_INCLUDE_DIRS}")
+    message(STATUS "OpenCV library path: ${OpenCV_LIB_PATH}")
+else()
+    message(FATAL_ERROR "Could not find OpenCV DLL. Searched in:\n${OpenCV_SEARCH_PATHS}\n\nPlease ensure opencv-python is installed correctly.")
+endif()
+
+message(STATUS "Using OpenCV DLL: ${OpenCV_LIBS}")
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+
+# Copy OpenCV DLL to output directory
+file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${OUTPUT_DIR})
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})
 
