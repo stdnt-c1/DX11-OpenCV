@@ -137,6 +137,7 @@ message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 
 # Copy OpenCV DLL to output directory
 file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${OUTPUT_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/*.dll DESTINATION ${OUTPUT_DIR})
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})
 

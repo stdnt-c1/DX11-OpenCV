@@ -14,7 +14,7 @@ version = "1.0.0"
 description = "DirectX 11 accelerated image processing for real-time video"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "MIT"
+license = { text = "Apache-2.0" }
 authors = [
     {name = "M. Bilal Maulida", email = "relay.arbiter303@gmail.com"}
 ]
