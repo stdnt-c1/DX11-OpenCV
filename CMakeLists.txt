@@ -193,6 +193,16 @@ if(NOT pybind11_FOUND)
     endif()
 endif()
 
+# Check for pybind11 and install if missing
+message(STATUS "Checking for pybind11...")
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m pip install --upgrade "pybind11>=2.10.0"
+    RESULT_VARIABLE PIP_RESULT
+)
+if(NOT PIP_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to install pybind11")
+endif()
+
 # Set MSVC-specific options
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP")
@@ -295,10 +305,12 @@ message(STATUS "Verifying dependencies...")
 execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print('pybind11 version:', pybind11.__version__)"
     RESULT_VARIABLE PYBIND11_RESULT
+    OUTPUT_VARIABLE PYBIND11_VERSION
 )
 if(NOT PYBIND11_RESULT EQUAL 0)
     message(FATAL_ERROR "pybind11 is not installed or incompatible.")
 endif()
+message(STATUS "${PYBIND11_VERSION}")
 
 execute_process(
     COMMAND ${Python3_EXECUTABLE} -c "import cv2; print('OpenCV version:', cv2.__version__)"

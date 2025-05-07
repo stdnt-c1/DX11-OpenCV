@@ -1,11 +1,13 @@
 [build-system]
 requires = [
     "setuptools>=77.0.0",
-    "wheel",
+    "wheel>=0.40.0",
     "pybind11>=2.10.0",
     "cmake>=3.15",
-    "ninja"
+    "ninja",
+    "build"
 ]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "dx11_renderer"
