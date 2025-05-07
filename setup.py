@@ -115,6 +115,7 @@ setup(
     install_requires=[
         "numpy>=1.19.0",
         "opencv-python>=4.5.0",
+        "pybind11>=2.10.0",
     ],
     zip_safe=False
 )

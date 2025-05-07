@@ -272,6 +272,24 @@ set_target_properties(_core PROPERTIES
     SUFFIX ".pyd"
 )
 
+# Verify and copy dx11_renderer_core.dll
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/dx11_renderer_core.dll")
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/dx11_renderer_core.dll" DESTINATION ${OUTPUT_DIR})
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/dx11_renderer_core.dll" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    message(STATUS "Copied dx11_renderer_core.dll to output directories.")
+else()
+    message(FATAL_ERROR "dx11_renderer_core.dll not found in dx11_renderer directory.")
+endif()
+
+# Verify and copy _core.pyd
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/_core.pyd")
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/_core.pyd" DESTINATION ${OUTPUT_DIR})
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/_core.pyd" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    message(STATUS "Copied _core.pyd to output directories.")
+else()
+    message(FATAL_ERROR "_core.pyd not found in dx11_renderer directory.")
+endif()
+
 # Fallback for OpenCV detection when installed via pip
 if(NOT OpenCV_DIR)
     message(WARNING "OpenCV_DIR is not set. Attempting to locate OpenCV via Python.")
