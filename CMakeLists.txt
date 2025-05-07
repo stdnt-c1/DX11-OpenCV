@@ -137,7 +137,15 @@ message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 
 # Copy OpenCV DLL to output directory
 file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${OUTPUT_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/*.dll DESTINATION ${OUTPUT_DIR})
+
+# Check if the dx11_renderer directory contains DLLs
+file(GLOB DX11_RENDERER_DLLS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/*.dll")
+if(DX11_RENDERER_DLLS)
+    file(COPY ${DX11_RENDERER_DLLS} DESTINATION ${OUTPUT_DIR})
+    message(STATUS "Copied DLLs from dx11_renderer to output directory.")
+else()
+    message(WARNING "No DLLs found in dx11_renderer directory to copy.")
+endif()
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})
 
