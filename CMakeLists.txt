@@ -235,6 +235,8 @@ target_include_directories(dx11_renderer_core
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
         ${OpenCV_INCLUDE_DIRS}
+        ${OPENCV_PYTHON_PATH}/include
+        ${OPENCV_PYTHON_PATH}
         ${DIRECTXTK_DIR}/Inc
 )
 

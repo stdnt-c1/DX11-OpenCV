@@ -1,4 +1,5 @@
-from setuptools import setup, Extension
+from setuptools import setup, find_packages, Extension
+from setuptools.dist import Distribution
 from setuptools.command.develop import develop
 from setuptools.command.build_ext import build_ext
 import os
@@ -7,6 +8,7 @@ import subprocess
 import sys
 import shutil
 from pathlib import Path
+import glob
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -85,6 +87,28 @@ class DevelopCommand(develop):
         self.run_command("build_ext")
         super().run()
 
+class BinaryDistribution(Distribution):
+    def has_ext_modules(self):
+        return True
+
+def find_dlls():
+    dll_paths = []
+    # Look in multiple locations
+    search_paths = [
+        'dx11_renderer',
+        'build/dx11_renderer',
+        'build',
+        'localpackage/dx11_renderer'
+    ]
+    
+    for path in search_paths:
+        if os.path.exists(path):
+            dlls = glob.glob(os.path.join(path, '*.dll'))
+            pyds = glob.glob(os.path.join(path, '*.pyd'))
+            dll_paths.extend([os.path.relpath(f, 'dx11_renderer') for f in dlls + pyds])
+    
+    return list(set(dll_paths))  # Remove duplicates
+
 setup(
     name="dx11-renderer",
     version="0.1.0",
@@ -94,12 +118,16 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/stdnt-c1/DX11-OpenCV",
-    packages=["dx11_renderer"],
+    packages=find_packages(),
+    package_data={
+        'dx11_renderer': find_dlls()
+    },
     ext_modules=[CMakeExtension("dx11_renderer._core")],
     cmdclass={
         "build_ext": CMakeBuild,
         "develop": DevelopCommand,
     },
+    distclass=BinaryDistribution,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -113,9 +141,14 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "numpy>=1.19.0",
-        "opencv-python>=4.5.0",
+        "numpy",
+        "opencv-python>=4.0.0",
         "pybind11>=2.10.0",
+    ],
+    setup_requires=[
+        'setuptools>=77.0.0',
+        'wheel>=0.40.0',
+        'pybind11>=2.10.0'
     ],
     zip_safe=False
 )
