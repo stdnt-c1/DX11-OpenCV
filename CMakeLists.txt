@@ -135,16 +135,45 @@ endif()
 message(STATUS "Using OpenCV DLL: ${OpenCV_LIBS}")
 message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 
-# Copy OpenCV DLL to output directory
-file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${OUTPUT_DIR})
+# Ensure output directories exist
+file(MAKE_DIRECTORY ${OUTPUT_DIR})
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-# Check if the dx11_renderer directory contains DLLs
-file(GLOB DX11_RENDERER_DLLS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/*.dll")
-if(DX11_RENDERER_DLLS)
-    file(COPY ${DX11_RENDERER_DLLS} DESTINATION ${OUTPUT_DIR})
-    message(STATUS "Copied DLLs from dx11_renderer to output directory.")
-else()
-    message(WARNING "No DLLs found in dx11_renderer directory to copy.")
+# Copy OpenCV DLL and its dependencies
+file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${OUTPUT_DIR})
+file(COPY ${OpenCV_WORLD_DLL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# Copy Visual C++ Runtime DLLs if they exist
+set(VC_REDIST_DLLS
+    "concrt140.dll"
+    "msvcp140.dll"
+    "msvcp140_1.dll"
+    "msvcp140_2.dll"
+    "msvcp140_atomic_wait.dll"
+    "msvcp140_codecvt_ids.dll"
+    "vccorlib140.dll"
+    "vcruntime140.dll"
+    "vcruntime140_1.dll"
+    "vcruntime140_threads.dll"
+)
+
+foreach(DLL ${VC_REDIST_DLLS})
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/${DLL}")
+        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/${DLL}" 
+             DESTINATION ${OUTPUT_DIR})
+        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/${DLL}" 
+             DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        message(STATUS "Copied ${DLL} to output directories")
+    endif()
+endforeach()
+
+# Copy DirectX related DLLs
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/D3DCompiler_47.dll")
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/D3DCompiler_47.dll" 
+         DESTINATION ${OUTPUT_DIR})
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/D3DCompiler_47.dll" 
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    message(STATUS "Copied D3DCompiler_47.dll to output directories")
 endif()
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})

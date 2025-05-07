@@ -74,3 +74,11 @@ jobs:
         name: python-package-distributions
         path: dist/*.whl
         retention-days: 7
+
+    - name: Verify dependencies
+      shell: cmd
+      run: |
+        python -c "import sys; print('Python:', sys.version)"
+        python -c "import pybind11; print('pybind11:', pybind11.__version__)"
+        python -c "import cv2; print('OpenCV:', cv2.__version__)"
+        dir /s /b dx11_renderer\*.dll
