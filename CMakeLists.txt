@@ -290,18 +290,20 @@ else()
     message(FATAL_ERROR "_core.pyd not found in dx11_renderer directory.")
 endif()
 
-# Fallback for OpenCV detection when installed via pip
-if(NOT OpenCV_DIR)
-    message(WARNING "OpenCV_DIR is not set. Attempting to locate OpenCV via Python.")
-    execute_process(
-        COMMAND python -c "import os, cv2; print(os.path.dirname(cv2.__file__))"
-        OUTPUT_VARIABLE OPENCV_PYTHON_PATH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    if(OPENCV_PYTHON_PATH)
-        set(OpenCV_DIR "${OPENCV_PYTHON_PATH}")
-        message(STATUS "Using OpenCV from Python: ${OpenCV_DIR}")
-    else()
-        message(FATAL_ERROR "Failed to locate OpenCV. Please set OpenCV_DIR manually.")
-    endif()
+# Verify dependencies
+message(STATUS "Verifying dependencies...")
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print('pybind11 version:', pybind11.__version__)"
+    RESULT_VARIABLE PYBIND11_RESULT
+)
+if(NOT PYBIND11_RESULT EQUAL 0)
+    message(FATAL_ERROR "pybind11 is not installed or incompatible.")
+endif()
+
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import cv2; print('OpenCV version:', cv2.__version__)"
+    RESULT_VARIABLE OPENCV_RESULT
+)
+if(NOT OPENCV_RESULT EQUAL 0)
+    message(FATAL_ERROR "OpenCV is not installed or incompatible.")
 endif()
