@@ -230,13 +230,19 @@ add_library(dx11_renderer_core SHARED
     include/dx11_renderer.h
 )
 
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "import os, cv2; print(os.path.dirname(cv2.__file__))"
+    OUTPUT_VARIABLE OPENCV_INCLUDE_ROOT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 target_include_directories(dx11_renderer_core
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
         ${OpenCV_INCLUDE_DIRS}
-        ${OPENCV_PYTHON_PATH}/include
         ${OPENCV_PYTHON_PATH}
+        ${OPENCV_INCLUDE_ROOT}/include
         ${DIRECTXTK_DIR}/Inc
 )
 
