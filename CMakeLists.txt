@@ -176,12 +176,17 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dx11_renderer/D3DCompiler_47.dll")
     message(STATUS "Copied D3DCompiler_47.dll to output directories")
 endif()
 
-include_directories(${OpenCV_INCLUDE_DIRS} ${OPENCV_PYTHON_PATH})
+# Set OpenCV include paths
+set(OpenCV_INCLUDE_PATHS
+    ${OpenCV_INCLUDE_DIRS}
+    ${OPENCV_PYTHON_PATH}
+    ${OPENCV_PYTHON_PATH}/include
+    ${OPENCV_PYTHON_PATH}/cv2
+    ${OPENCV_PYTHON_PATH}/cv2/include
+)
 
-# Add OpenCV include paths
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${OPENCV_PYTHON_PATH}/include)
-include_directories(${OPENCV_PYTHON_PATH})
+# Add include directories
+include_directories(${OpenCV_INCLUDE_PATHS})
 
 # Set Python and pybind11 options
 set(PYBIND11_PYTHON_VERSION "${Python3_VERSION}")

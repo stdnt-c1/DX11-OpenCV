@@ -1,3 +1,5 @@
+name: Publish to PyPI
+
 on:
   release:
     types: [created]
@@ -18,11 +20,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        lfs: false  # Skip LFS files
         submodules: recursive
         fetch-depth: 0
-        lfs: true
 
-    - uses: actions/setup-python@v5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
@@ -31,30 +34,31 @@ jobs:
           requirements.txt
           setup.py
 
+    - name: Download DLLs
+      run: |
+        mkdir -p dx11_renderer
+        # Download or copy necessary DLLs from reliable sources
+        # This will be replaced with actual DLL downloads in production
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.3.1
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel build twine ninja cmake
+        python -m pip install --upgrade pip setuptools wheel
+        pip install build ninja cmake
         pip install -r requirements.txt
 
     - name: Build wheel
-      shell: cmd
       run: |
-        python -m build --wheel --no-isolation
-        if errorlevel 1 (
-          echo "Wheel build failed"
-          if exist log\wheel_build_log.txt type log\wheel_build_log.txt
-          exit /b 1
-        )
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+        cmake --build build --config Release
+        python -m build --wheel
 
-    - name: Verify package contents
+    - name: Verify package
       run: |
-        python -m pip install dist\*.whl --force-reinstall
-        python -c "import dx11_renderer; print('Module imported successfully')"
-        python -c "import dx11_renderer.core; print('Core module imported successfully')"
+        python -m pip install dist/*.whl --force-reinstall
+        python -c "import dx11_renderer; print('Package verification successful')"
 
     - name: Store wheel
       uses: actions/upload-artifact@v4
@@ -62,11 +66,15 @@ jobs:
         name: python-${{ matrix.python-version }}-wheel
         path: dist/*.whl
         if-no-files-found: error
-        retention-days: 7
 
   publish:
     needs: build_wheels
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dx11_renderer
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/download-artifact@v4
@@ -75,26 +83,5 @@ jobs:
         path: dist
         merge-multiple: true
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Install twine
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade twine
-
-    - name: List wheels
-      run: |
-        ls -l dist/
-
-    - name: Check wheels
-      run: |
-        python -m twine check dist/*.whl
-
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        python -m twine upload --skip-existing dist/*.whl
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1

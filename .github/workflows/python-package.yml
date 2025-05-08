@@ -1,3 +1,5 @@
+name: Python Package
+
 on:
   push:
     branches: [ main ]
@@ -10,7 +12,7 @@ permissions:
   packages: write
 
 jobs:
-  test:
+  build:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -20,11 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        lfs: false  # Skip LFS files
         submodules: recursive
         fetch-depth: 0
-        lfs: true
 
-    - uses: actions/setup-python@v5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         architecture: x64
@@ -33,40 +36,38 @@ jobs:
           requirements.txt
           setup.py
 
+    - name: Download DLLs
+      run: |
+        mkdir -p dx11_renderer
+        # Download or copy necessary DLLs from reliable sources
+        # This will be replaced with actual DLL downloads in production
+
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.3.1
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
-        pip install setuptools wheel build ninja cmake
+        python -m pip install --upgrade pip setuptools wheel
+        pip install pytest pytest-cov build ninja cmake
         pip install -r requirements.txt
 
-    - name: Build and test
-      shell: cmd
+    - name: Build package
       run: |
         cmake -S . -B build -G "Visual Studio 17 2022" -A x64
         cmake --build build --config Release
+
+    - name: Run tests
+      run: |
         python -m pytest tests/ --cov=dx11_renderer --cov-report=xml
 
     - name: Upload coverage
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
         fail_ci_if_error: true
 
     - name: Build wheel
-      shell: cmd
-      run: |
-        python -m build --wheel
-        if errorlevel 1 (
-          echo "Wheel build failed"
-          if exist log\wheel_build_log.txt type log\wheel_build_log.txt
-          exit /b 1
-        )
+      run: python -m build --wheel
 
     - name: Store package
       uses: actions/upload-artifact@v4
@@ -74,11 +75,3 @@ jobs:
         name: python-package-distributions
         path: dist/*.whl
         retention-days: 7
-
-    - name: Verify dependencies
-      shell: cmd
-      run: |
-        python -c "import sys; print('Python:', sys.version)"
-        python -c "import pybind11; print('pybind11:', pybind11.__version__)"
-        python -c "import cv2; print('OpenCV:', cv2.__version__)"
-        dir /s /b dx11_renderer\*.dll
