@@ -312,6 +312,19 @@ else()
     message(FATAL_ERROR "_core.pyd not found in dx11_renderer directory.")
 endif()
 
+# Verify build outputs
+add_custom_command(TARGET dx11_renderer_core POST_BUILD
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/build_verify.py
+    COMMENT "Verifying build outputs..."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Create output verification target
+add_custom_target(verify_build ALL
+    DEPENDS dx11_renderer_core _core
+    COMMENT "Verifying all build outputs..."
+)
+
 # Verify dependencies
 message(STATUS "Verifying dependencies...")
 execute_process(
